@@ -64,7 +64,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ csvData, isAuthe
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
 
-  const isGoogleClientConfigured = !!process.env.GOOGLE_CLIENT_ID;
+  const isGoogleClientConfigured = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const parsedData = useMemo(() => {
     if (!csvData) return { headers: [], rows: [] };
@@ -151,7 +151,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ csvData, isAuthe
       </div>
        {!isGoogleClientConfigured && (
         <div className="mb-4 bg-yellow-900/50 border border-yellow-500 text-yellow-300 px-4 py-2 rounded-lg text-sm" role="alert">
-          Pour activer la création de Google Sheets, un administrateur doit configurer la variable d'environnement GOOGLE_CLIENT_ID.
+          Pour activer la création de Google Sheets, un administrateur doit configurer la variable d'environnement VITE_GOOGLE_CLIENT_ID.
         </div>
       )}
       {sheetUrl && (

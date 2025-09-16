@@ -1,0 +1,29 @@
+# Empêche d'envoyer le dossier de Git au démon Docker.
+.git
+.gitignore
+
+# Empêche d'envoyer les dépendances locales.
+# Celles-ci doivent être installées à l'intérieur du conteneur pour garantir
+# la compatibilité avec l'environnement (alpine-linux).
+node_modules
+
+# Dossiers de build (ils sont générés à l'intérieur du conteneur).
+dist
+dist-ssr
+
+# Fichiers de configuration spécifiques à l'environnement que nous ne voulons pas
+# inclure dans l'image Docker.
+.env.local
+values.yaml.dev
+values.yaml.prod
+helm/values.yaml.dev
+helm/values.yaml.prod
+
+# Fichiers de logs et de débogage.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# README (souvent inutile dans l'image finale).
+README.md

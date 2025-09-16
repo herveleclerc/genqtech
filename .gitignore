@@ -10,7 +10,14 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+coverage
 *.local
+
+# Fichiers de valeurs Helm spécifiques à l'environnement
+helm/values.yaml.dev
+helm/values.yaml.prod
+values.yaml.dev
+values.yaml.prod
 
 # Editor directories and files
 .vscode/*

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: genqtech-app
+description: A Helm chart for deploying the GenQTech React application
+type: application
+
+# Ceci est la version du chart. Incrémentez-la lorsque vous faites des changements.
+version: 0.1.0
+
+# Ceci est la version de l'application. Elle est souvent alignée sur la version de l'image Docker.
+appVersion: "1.0.0"
