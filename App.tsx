@@ -40,14 +40,8 @@ const App: React.FC = () => {
 
 
   useEffect(() => {
-    // This effect handles the asynchronous loading and initialization of
-    // the Google API (GAPI) for Sheets and Google Identity Services (GSI) for auth.
     const initializeLibraries = () => {
       if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
-        // Both library scripts are loaded, now we initialize them.
-        // We must ensure both are fully ready before enabling auth features
-        // to prevent race conditions.
-        
         let gapiInitialized = false;
         let gsiInitialized = false;
         
@@ -57,7 +51,6 @@ const App: React.FC = () => {
             }
         };
 
-        // 1. Initialize GAPI client for Google Sheets API calls
         gapi.load('client', async () => {
           try {
             await gapi.client.init({
@@ -68,11 +61,10 @@ const App: React.FC = () => {
             setAuthReadyWhenBothInitialized();
           } catch (err) {
             console.error("Erreur lors de l'initialisation du client GAPI:", err);
-            setCriticalError("Impossible d'initialiser l'API Google Sheets. Vérifiez la clé API et la configuration de l'API dans Google Cloud Console.");
+            setCriticalError("Impossible d'initialiser l'API Google Sheets. Vérifiez la clé API et que l'API est activée dans Google Cloud Console.");
           }
         });
 
-        // 2. Initialize GSI token client for authentication
         try {
             const client = google.accounts.oauth2.initTokenClient({
               client_id: GOOGLE_CLIENT_ID,
@@ -81,15 +73,26 @@ const App: React.FC = () => {
                 if (tokenResponse && tokenResponse.access_token) {
                   gapi.client.setToken(tokenResponse);
                   setIsAuthenticated(true);
+                  setCriticalError(null); // Efface les erreurs précédentes en cas de succès
                 } else {
                   console.error('La réponse du token est invalide.', tokenResponse);
-                  addToast("Échec de l'authentification Google. La réponse du token est invalide.");
+                  setCriticalError("Échec de l'authentification : la réponse de Google ne contenait pas de token d'accès valide.");
                   setIsAuthenticated(false);
                 }
               },
               error_callback: (error: any) => {
                  console.error('Erreur GSI:', error);
-                 addToast(`Erreur d'authentification Google : ${error.details || error.message || 'Erreur inconnue.'}`);
+                 let detailedMessage = "Échec de l'authentification Google.";
+                 if (error && error.details) {
+                    detailedMessage += ` Détails : ${error.details}.`;
+                    if (error.details.includes('origin')) {
+                        detailedMessage += " Assurez-vous que l'URL de cette application est bien ajoutée aux 'Origines JavaScript autorisées' dans votre console Google Cloud.";
+                    }
+                 } else if (error && error.type) {
+                     detailedMessage += ` Type d'erreur : ${error.type}.`;
+                 }
+                 setCriticalError(detailedMessage);
+                 setIsAuthenticated(false);
               }
             });
             setTokenClient(client);
@@ -97,25 +100,26 @@ const App: React.FC = () => {
             setAuthReadyWhenBothInitialized();
         } catch(err) {
             console.error("Erreur lors de l'initialisation du client GSI:", err);
-            setCriticalError("Impossible d'initialiser le service d'authentification Google. Vérifiez l'ID Client OAuth.");
+            setCriticalError("Impossible d'initialiser le service d'authentification Google. Vérifiez que votre ID Client OAuth est correct.");
         }
 
       } else {
-        // One or both library scripts are not loaded yet, poll again.
         setTimeout(initializeLibraries, 100);
       }
     };
     
-    if(GOOGLE_CLIENT_ID && API_KEY) {
-      initializeLibraries();
+    if(!GOOGLE_CLIENT_ID || !API_KEY) {
+      setCriticalError("Configuration manquante : Les variables d'environnement GOOGLE_CLIENT_ID et/ou API_KEY ne sont pas définies.");
+      return;
     }
-  }, [GOOGLE_CLIENT_ID, API_KEY, addToast]);
+    initializeLibraries();
+
+  }, [GOOGLE_CLIENT_ID, API_KEY]);
 
 
   const handleLogin = () => {
     if (tokenClient) {
-      // Prompt the user to grant access. 'consent' will always show the consent screen.
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      tokenClient.requestAccessToken({ prompt: '' });
     } else {
       addToast("Le client d'authentification n'est pas prêt. Veuillez patienter un instant et réessayer.");
     }
@@ -124,7 +128,6 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setIsAuthenticated(false);
     if (gapi && gapi.client) {
-        // Clears the token from the GAPI client for this session.
         gapi.client.setToken(null);
     }
   };
@@ -132,7 +135,7 @@ const App: React.FC = () => {
   const handleFileChange = (file: File | null) => {
     setPdfFile(file);
     setCsvData(null);
-    setCriticalError(null);
+    // Do not clear critical errors on file change, only on successful actions
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -193,30 +196,39 @@ const App: React.FC = () => {
         )}
 
         <main className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-700">
-          <FileUpload onFileChange={handleFileChange} />
-
-          {pdfFile && (
-            <div className="mt-6 text-center">
-              <p className="text-gray-300">
-                Fichier sélectionné : <span className="font-semibold text-purple-400">{pdfFile.name}</span>
-              </p>
-            </div>
+          {criticalError && (
+             <div className="mb-6">
+               <ErrorMessage message={criticalError} />
+             </div>
           )}
 
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={handleGenerateClick}
-              disabled={!pdfFile || isLoading}
-              className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition-all duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-105"
-            >
-              {isLoading ? 'Génération en cours...' : 'Générer les Questions'}
-            </button>
-          </div>
+          {!criticalError && (
+            <>
+              <FileUpload onFileChange={handleFileChange} />
+
+              {pdfFile && (
+                <div className="mt-6 text-center">
+                  <p className="text-gray-300">
+                    Fichier sélectionné : <span className="font-semibold text-purple-400">{pdfFile.name}</span>
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={handleGenerateClick}
+                  disabled={!pdfFile || isLoading}
+                  className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition-all duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-105"
+                >
+                  {isLoading ? 'Génération en cours...' : 'Générer les Questions'}
+                </button>
+              </div>
+            </>
+          )}
 
           <div className="mt-10">
             {isLoading && <Loader />}
-            {criticalError && <ErrorMessage message={criticalError} />}
-            {csvData && <ResultsDisplay csvData={csvData} isAuthenticated={isAuthenticated} onError={addToast} />}
+            {csvData && !criticalError && <ResultsDisplay csvData={csvData} isAuthenticated={isAuthenticated} onError={addToast} />}
           </div>
         </main>
       </div>
