@@ -5,15 +5,22 @@ import { Loader } from './components/Loader';
 import { ErrorMessage } from './components/ErrorMessage';
 import { generateQuestionsFromPDF } from './services/geminiService';
 import { Auth } from './components/Auth';
+import { ToastContainer } from './components/ToastContainer';
 
 declare const google: any;
 declare const gapi: any;
 
+interface Toast {
+  id: number;
+  message: string;
+}
+
 const App: React.FC = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [criticalError, setCriticalError] = useState<string | null>(null);
   const [csvData, setCsvData] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const [tokenClient, setTokenClient] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,6 +28,16 @@ const App: React.FC = () => {
   
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const API_KEY = process.env.API_KEY;
+  
+  const addToast = useCallback((message: string) => {
+    const newToast: Toast = { id: Date.now(), message };
+    setToasts(prevToasts => [...prevToasts, newToast]);
+  }, []);
+
+  const removeToast = useCallback((id: number) => {
+    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+  }, []);
+
 
   useEffect(() => {
     // This effect handles the asynchronous loading and initialization of
@@ -51,7 +68,7 @@ const App: React.FC = () => {
             setAuthReadyWhenBothInitialized();
           } catch (err) {
             console.error("Erreur lors de l'initialisation du client GAPI:", err);
-            setError("Impossible d'initialiser l'API Google Sheets. Vérifiez la clé API et la configuration de l'API dans Google Cloud Console.");
+            setCriticalError("Impossible d'initialiser l'API Google Sheets. Vérifiez la clé API et la configuration de l'API dans Google Cloud Console.");
           }
         });
 
@@ -66,13 +83,13 @@ const App: React.FC = () => {
                   setIsAuthenticated(true);
                 } else {
                   console.error('La réponse du token est invalide.', tokenResponse);
-                  setError("Échec de l'authentification Google. La réponse du token est invalide.");
+                  addToast("Échec de l'authentification Google. La réponse du token est invalide.");
                   setIsAuthenticated(false);
                 }
               },
               error_callback: (error: any) => {
                  console.error('Erreur GSI:', error);
-                 setError(`Erreur d'authentification Google : ${error.details || error.message || 'Erreur inconnue.'}`);
+                 addToast(`Erreur d'authentification Google : ${error.details || error.message || 'Erreur inconnue.'}`);
               }
             });
             setTokenClient(client);
@@ -80,7 +97,7 @@ const App: React.FC = () => {
             setAuthReadyWhenBothInitialized();
         } catch(err) {
             console.error("Erreur lors de l'initialisation du client GSI:", err);
-            setError("Impossible d'initialiser le service d'authentification Google. Vérifiez l'ID Client OAuth.");
+            setCriticalError("Impossible d'initialiser le service d'authentification Google. Vérifiez l'ID Client OAuth.");
         }
 
       } else {
@@ -92,7 +109,7 @@ const App: React.FC = () => {
     if(GOOGLE_CLIENT_ID && API_KEY) {
       initializeLibraries();
     }
-  }, [GOOGLE_CLIENT_ID, API_KEY]);
+  }, [GOOGLE_CLIENT_ID, API_KEY, addToast]);
 
 
   const handleLogin = () => {
@@ -100,7 +117,7 @@ const App: React.FC = () => {
       // Prompt the user to grant access. 'consent' will always show the consent screen.
       tokenClient.requestAccessToken({ prompt: 'consent' });
     } else {
-      setError("Le client d'authentification n'est pas prêt. Veuillez patienter un instant et réessayer.");
+      addToast("Le client d'authentification n'est pas prêt. Veuillez patienter un instant et réessayer.");
     }
   };
 
@@ -115,7 +132,7 @@ const App: React.FC = () => {
   const handleFileChange = (file: File | null) => {
     setPdfFile(file);
     setCsvData(null);
-    setError(null);
+    setCriticalError(null);
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -132,12 +149,11 @@ const App: React.FC = () => {
 
   const handleGenerateClick = useCallback(async () => {
     if (!pdfFile) {
-      setError("Veuillez d'abord sélectionner un fichier PDF.");
+      addToast("Veuillez d'abord sélectionner un fichier PDF.");
       return;
     }
 
     setIsLoading(true);
-    setError(null);
     setCsvData(null);
 
     try {
@@ -146,14 +162,15 @@ const App: React.FC = () => {
       setCsvData(generatedCsv);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Une erreur inconnue est survenue lors de la génération des questions.");
+      addToast(err instanceof Error ? err.message : "Une erreur inconnue est survenue lors de la génération des questions.");
     } finally {
       setIsLoading(false);
     }
-  }, [pdfFile]);
+  }, [pdfFile, addToast]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-6 lg:p-8">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       <div className="w-full max-w-4xl mx-auto relative">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600">
@@ -198,8 +215,8 @@ const App: React.FC = () => {
 
           <div className="mt-10">
             {isLoading && <Loader />}
-            {error && <ErrorMessage message={error} />}
-            {csvData && <ResultsDisplay csvData={csvData} isAuthenticated={isAuthenticated} />}
+            {criticalError && <ErrorMessage message={criticalError} />}
+            {csvData && <ResultsDisplay csvData={csvData} isAuthenticated={isAuthenticated} onError={addToast} />}
           </div>
         </main>
       </div>

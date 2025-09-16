@@ -3,12 +3,12 @@ import { ClipboardIcon } from './icons/ClipboardIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { GoogleSheetsIcon } from './icons/GoogleSheetsIcon';
-import { ErrorMessage } from './ErrorMessage';
 import { createGoogleSheet } from '../services/googleSheetsService';
 
 interface ResultsDisplayProps {
   csvData: string;
   isAuthenticated: boolean;
+  onError: (message: string) => void;
 }
 
 // A simple CSV parser that handles quoted fields
@@ -59,11 +59,10 @@ const parseCsv = (csvString: string): string[][] => {
 };
 
 
-export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ csvData, isAuthenticated }) => {
+export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ csvData, isAuthenticated, onError }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
-  const [sheetError, setSheetError] = useState<string | null>(null);
 
   const isGoogleClientConfigured = !!process.env.GOOGLE_CLIENT_ID;
 
@@ -102,14 +101,13 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ csvData, isAuthe
   const handleCreateSheet = async () => {
     setIsCreatingSheet(true);
     setSheetUrl(null);
-    setSheetError(null);
     try {
       const fullData = [headers, ...rows];
       const url = await createGoogleSheet("Questions d'entretien générées", fullData);
       setSheetUrl(url);
     } catch (err) {
       console.error(err);
-      setSheetError(err instanceof Error ? err.message : "Une erreur inconnue est survenue lors de la création de la feuille Google Sheet.");
+      onError(err instanceof Error ? err.message : "Une erreur inconnue est survenue lors de la création de la feuille Google Sheet.");
     } finally {
       setIsCreatingSheet(false);
     }
@@ -156,7 +154,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ csvData, isAuthe
           Pour activer la création de Google Sheets, un administrateur doit configurer la variable d'environnement GOOGLE_CLIENT_ID.
         </div>
       )}
-      {sheetError && <div className="my-4"><ErrorMessage message={sheetError} /></div>}
       {sheetUrl && (
         <div className="my-4 p-4 bg-green-900/50 border border-green-500 text-green-200 rounded-lg flex items-center justify-between">
           <p>
