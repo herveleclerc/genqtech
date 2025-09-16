@@ -1,0 +1,5 @@
+{
+  "name": "Générateur de Questions d'Entretien",
+  "description": "Téléchargez une description de poste au format PDF et générez automatiquement des questions d'entretien technique structurées au format CSV, prêtes à être importées dans Google Sheets.",
+  "requestFramePermissions": []
+}
