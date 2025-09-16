@@ -23,58 +23,91 @@ const App: React.FC = () => {
   const API_KEY = process.env.API_KEY;
 
   useEffect(() => {
-    const checkGapiAndGsi = () => {
+    // This effect handles the asynchronous loading and initialization of
+    // the Google API (GAPI) for Sheets and Google Identity Services (GSI) for auth.
+    const initializeLibraries = () => {
       if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
-        // GAPI client setup
-        gapi.load('client', async () => {
-          await gapi.client.init({
-            apiKey: API_KEY,
-            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-          });
-        });
-
-        // GSI client setup
-        const client = google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'https://www.googleapis.com/auth/spreadsheets',
-          callback: (tokenResponse: any) => {
-            if (tokenResponse && tokenResponse.access_token) {
-              gapi.client.setToken(tokenResponse);
-              setIsAuthenticated(true);
-            } else {
-              console.error('Provided token response was invalid.', tokenResponse);
-              setError("Échec de l'authentification Google. La réponse du token est invalide.");
-              setIsAuthenticated(false);
+        // Both library scripts are loaded, now we initialize them.
+        // We must ensure both are fully ready before enabling auth features
+        // to prevent race conditions.
+        
+        let gapiInitialized = false;
+        let gsiInitialized = false;
+        
+        const setAuthReadyWhenBothInitialized = () => {
+            if (gapiInitialized && gsiInitialized) {
+                setIsAuthReady(true);
             }
-          },
-          error_callback: (error: any) => {
-             console.error('GSI Error:', error);
-             setError(`Erreur d'authentification Google : ${error.details || error.message || 'Erreur inconnue.'}`);
+        };
+
+        // 1. Initialize GAPI client for Google Sheets API calls
+        gapi.load('client', async () => {
+          try {
+            await gapi.client.init({
+              apiKey: API_KEY,
+              discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+            });
+            gapiInitialized = true;
+            setAuthReadyWhenBothInitialized();
+          } catch (err) {
+            console.error("Erreur lors de l'initialisation du client GAPI:", err);
+            setError("Impossible d'initialiser l'API Google Sheets. Vérifiez la clé API et la configuration de l'API dans Google Cloud Console.");
           }
         });
-        setTokenClient(client);
-        setIsAuthReady(true);
+
+        // 2. Initialize GSI token client for authentication
+        try {
+            const client = google.accounts.oauth2.initTokenClient({
+              client_id: GOOGLE_CLIENT_ID,
+              scope: 'https://www.googleapis.com/auth/spreadsheets',
+              callback: (tokenResponse: any) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                  gapi.client.setToken(tokenResponse);
+                  setIsAuthenticated(true);
+                } else {
+                  console.error('La réponse du token est invalide.', tokenResponse);
+                  setError("Échec de l'authentification Google. La réponse du token est invalide.");
+                  setIsAuthenticated(false);
+                }
+              },
+              error_callback: (error: any) => {
+                 console.error('Erreur GSI:', error);
+                 setError(`Erreur d'authentification Google : ${error.details || error.message || 'Erreur inconnue.'}`);
+              }
+            });
+            setTokenClient(client);
+            gsiInitialized = true;
+            setAuthReadyWhenBothInitialized();
+        } catch(err) {
+            console.error("Erreur lors de l'initialisation du client GSI:", err);
+            setError("Impossible d'initialiser le service d'authentification Google. Vérifiez l'ID Client OAuth.");
+        }
+
       } else {
-        // Poll for GAPI and GSI
-        setTimeout(checkGapiAndGsi, 100);
+        // One or both library scripts are not loaded yet, poll again.
+        setTimeout(initializeLibraries, 100);
       }
     };
     
     if(GOOGLE_CLIENT_ID && API_KEY) {
-      checkGapiAndGsi();
+      initializeLibraries();
     }
   }, [GOOGLE_CLIENT_ID, API_KEY]);
 
 
   const handleLogin = () => {
     if (tokenClient) {
+      // Prompt the user to grant access. 'consent' will always show the consent screen.
       tokenClient.requestAccessToken({ prompt: 'consent' });
+    } else {
+      setError("Le client d'authentification n'est pas prêt. Veuillez patienter un instant et réessayer.");
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     if (gapi && gapi.client) {
+        // Clears the token from the GAPI client for this session.
         gapi.client.setToken(null);
     }
   };
@@ -131,7 +164,7 @@ const App: React.FC = () => {
           </p>
         </header>
         
-        {GOOGLE_CLIENT_ID && (
+        {GOOGLE_CLIENT_ID && API_KEY && (
           <div className="absolute top-0 right-0 p-2">
             <Auth
               isAuthenticated={isAuthenticated}
