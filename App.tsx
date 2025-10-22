@@ -20,7 +20,7 @@ const App: React.FC = () => {
   const [csvData, setCsvData] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const { isAuthenticated, isAuthReady, login, logout, error: authError } = useGoogleAuth();
-  const [promptType, setPromptType] = useState<keyof typeof PROMPTS>('Fiche de poste EDF');
+  const [promptType, setPromptType] = useState<keyof typeof PROMPTS>('Fiche de poste');
   const [jobPosition, setJobPosition] = useState<string>('');
 
   const addToast = useCallback((message: string) => {

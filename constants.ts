@@ -1,6 +1,6 @@
 
 export const PROMPTS = {
-  "Fiche de poste EDF": `
+  "Fiche de poste": `
 Tu es un directeur technique, tu dois préparer pour les personnes responsables du recrutement des questions techniques permettant d'évaluer si la personne est adaptée par rapport à la demande fournie en pièce jointe.
 
 Ton rôle et tes objectifs:
@@ -78,4 +78,4 @@ Ton ton général:
 `
 };
 
-export const GEMINI_PROMPT = PROMPTS["Fiche de poste EDF"];
+export const GEMINI_PROMPT = PROMPTS["Fiche de poste"];
