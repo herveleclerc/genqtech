@@ -1,5 +1,4 @@
 import { GoogleGenAI } from "@google/genai";
-import { GEMINI_PROMPT } from '../constants';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -38,7 +37,7 @@ function extractCsvContent(rawText: string): string {
 }
 
 
-export async function generateQuestionsFromPDF(base64Pdf: string): Promise<string> {
+export async function generateQuestionsFromPDF(base64Pdf: string, prompt: string): Promise<string> {
   try {
     const pdfPart = {
       inlineData: {
@@ -48,7 +47,7 @@ export async function generateQuestionsFromPDF(base64Pdf: string): Promise<strin
     };
 
     const textPart = {
-      text: GEMINI_PROMPT,
+      text: prompt,
     };
     
     const response = await ai.models.generateContent({

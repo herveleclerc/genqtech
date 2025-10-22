@@ -7,6 +7,7 @@ import { generateQuestionsFromPDF } from './services/geminiService';
 import { Auth } from './components/Auth';
 import { ToastContainer } from './components/ToastContainer';
 import { useGoogleAuth } from './services/useGoogleAuth';
+import { PROMPTS } from './constants';
 
 interface Toast {
   id: number;
@@ -19,6 +20,7 @@ const App: React.FC = () => {
   const [csvData, setCsvData] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const { isAuthenticated, isAuthReady, login, logout, error: authError } = useGoogleAuth();
+  const [promptType, setPromptType] = useState<keyof typeof PROMPTS>('Fiche de poste EDF');
 
   const addToast = useCallback((message: string) => {
     const newToast: Toast = { id: Date.now(), message };
@@ -57,7 +59,7 @@ const App: React.FC = () => {
 
     try {
       const base64String = await fileToBase64(pdfFile);
-      const generatedCsv = await generateQuestionsFromPDF(base64String);
+      const generatedCsv = await generateQuestionsFromPDF(base64String, PROMPTS[promptType]);
       setCsvData(generatedCsv);
     } catch (err) {
       console.error(err);
@@ -104,6 +106,24 @@ const App: React.FC = () => {
 
           {!authError && (
             <>
+              <div className="mb-6">
+                <label htmlFor="prompt-type" className="block text-sm font-medium text-gray-300 mb-2">
+                  Type de document
+                </label>
+                <select
+                  id="prompt-type"
+                  value={promptType}
+                  onChange={(e) => setPromptType(e.target.value as keyof typeof PROMPTS)}
+                  className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5"
+                >
+                  {Object.keys(PROMPTS).map((key) => (
+                    <option key={key} value={key}>
+                      {key}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <FileUpload onFileChange={handleFileChange} />
 
               {pdfFile && (
