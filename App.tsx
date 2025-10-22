@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const { isAuthenticated, isAuthReady, login, logout, error: authError } = useGoogleAuth();
   const [promptType, setPromptType] = useState<keyof typeof PROMPTS>('Fiche de poste EDF');
+  const [jobPosition, setJobPosition] = useState<string>('');
 
   const addToast = useCallback((message: string) => {
     const newToast: Toast = { id: Date.now(), message };
@@ -59,7 +60,11 @@ const App: React.FC = () => {
 
     try {
       const base64String = await fileToBase64(pdfFile);
-      const generatedCsv = await generateQuestionsFromPDF(base64String, PROMPTS[promptType]);
+      let prompt = PROMPTS[promptType];
+      if (promptType === 'CV') {
+        prompt = prompt.replace('{jobPosition}', jobPosition);
+      }
+      const generatedCsv = await generateQuestionsFromPDF(base64String, prompt);
       setCsvData(generatedCsv);
     } catch (err) {
       console.error(err);
@@ -67,7 +72,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [pdfFile, addToast]);
+  }, [pdfFile, addToast, promptType, jobPosition]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-6 lg:p-8">
@@ -123,6 +128,22 @@ const App: React.FC = () => {
                   ))}
                 </select>
               </div>
+
+              {promptType === 'CV' && (
+                <div className="mb-6">
+                  <label htmlFor="job-position" className="block text-sm font-medium text-gray-300 mb-2">
+                    Pour quel poste le candidat postule-t-il ?
+                  </label>
+                  <input
+                    type="text"
+                    id="job-position"
+                    value={jobPosition}
+                    onChange={(e) => setJobPosition(e.target.value)}
+                    className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5"
+                    placeholder="ex: Développeur Full-Stack"
+                  />
+                </div>
+              )}
 
               <FileUpload onFileChange={handleFileChange} />
 
