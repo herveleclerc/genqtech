@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Déclare les arguments de build que nous attendons.
 # Ce sont les placeholders qui seront injectés au moment du build.
+ARG VITE_APP_VERSION_ARG="1.0.0"
 ARG VITE_GEMINI_API_KEY_ARG="PLACEHOLDER_VITE_GEMINI_API_KEY"
 ARG VITE_GOOGLE_CLIENT_ID_ARG="PLACEHOLDER_VITE_GOOGLE_CLIENT_ID"
 ARG VITE_GOOGLE_SHEETS_API_KEY_ARG="PLACEHOLDER_VITE_GOOGLE_SHEETS_API_KEY"
@@ -22,6 +23,7 @@ COPY . .
 
 # Expose les arguments de build en tant que variables d'environnement
 # pour qu'ils soient disponibles pour la commande `npm run build`.
+ENV VITE_APP_VERSION=$VITE_APP_VERSION_ARG
 ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY_ARG
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID_ARG
 ENV VITE_GOOGLE_SHEETS_API_KEY=$VITE_GOOGLE_SHEETS_API_KEY_ARG

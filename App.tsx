@@ -82,7 +82,7 @@ const App: React.FC = () => {
               Générateur de Questions d'Entretien
             </h1>
             <p className="mt-4 text-lg text-gray-400">
-              Analysez une description de poste PDF et créez instantanément une grille d'évaluation technique.
+              Analysez une description de poste PDF ou un CV et créez instantanément une grille d'évaluation technique.
             </p>
           </header>
           
@@ -153,7 +153,7 @@ const App: React.FC = () => {
         </main>
       </div>
        <footer className="w-full max-w-4xl mx-auto text-center mt-8 py-4 text-gray-500 text-sm">
-          <p>&copy; {new Date().getFullYear()} Générateur de Questions. Conçu pour les recruteurs techniques.</p>
+          <p>&copy; {new Date().getFullYear()} Générateur de Questions. Conçu pour les recruteurs techniques. v{import.meta.env.VITE_APP_VERSION}</p>
         </footer>
     </div>
   );
