@@ -49,7 +49,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileChange }) => {
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-300 ${isDragging ? 'border-indigo-500 bg-gray-700/50' : 'border-gray-600 bg-gray-800 hover:bg-gray-700/80'}`}
+        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-300 ${isDragging ? 'border-indigo-500 bg-gray-700/50' : 'border-gray-600 bg-gray-800 hover:bg-gray-700/80'}`}
       >
         <div className="flex flex-col items-center justify-center pt-5 pb-6">
           <UploadIcon className={`w-10 h-10 mb-4 transition-colors duration-300 ${isDragging ? 'text-indigo-400' : 'text-gray-400'}`} />

@@ -90,7 +90,7 @@ const App: React.FC = () => {
               Analysez une description de poste PDF ou un CV et créez instantanément une grille d'évaluation technique.
             </p>
           </header>
-          
+
           {/* Conteneur pour le bouton d'authentification */}
           <div className="w-40 flex-shrink-0 flex justify-end">
             <Auth
@@ -104,9 +104,9 @@ const App: React.FC = () => {
 
         <main className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-700">
           {authError && (
-             <div className="mb-6">
-               <ErrorMessage message={authError} />
-             </div>
+            <div className="mb-6">
+              <ErrorMessage message={authError} />
+            </div>
           )}
 
           {!authError && (
@@ -134,13 +134,13 @@ const App: React.FC = () => {
                   <label htmlFor="job-position" className="block text-sm font-medium text-gray-300 mb-2">
                     Pour quel poste le candidat postule-t-il ?
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     id="job-position"
                     value={jobPosition}
                     onChange={(e) => setJobPosition(e.target.value)}
                     className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5"
                     placeholder="ex: Développeur Full-Stack"
+                    rows={4}
                   />
                 </div>
               )}
@@ -173,9 +173,9 @@ const App: React.FC = () => {
           </div>
         </main>
       </div>
-       <footer className="w-full max-w-4xl mx-auto text-center mt-8 py-4 text-gray-500 text-sm">
-          <p>&copy; {new Date().getFullYear()} Générateur de Questions. Conçu pour les recruteurs techniques. v{import.meta.env.VITE_APP_VERSION}</p>
-        </footer>
+      <footer className="w-full max-w-4xl mx-auto text-center mt-8 py-4 text-gray-500 text-sm">
+        <p>&copy; {new Date().getFullYear()} Générateur de Questions. Conçu pour les recruteurs techniques. v{import.meta.env.VITE_APP_VERSION}</p>
+      </footer>
     </div>
   );
 };
